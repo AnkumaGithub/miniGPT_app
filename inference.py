@@ -1,18 +1,14 @@
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast, pipeline
 from peft import PeftModel
 
-# 1. Загрузите токенизатор с добавленными токенами
 tokenizer = GPT2TokenizerFast.from_pretrained("./results/checkpoint-441")
 
-# 2. Загрузите базовую модель и измените размер эмбеддингов
 base_model = GPT2LMHeadModel.from_pretrained("gpt2")
-base_model.resize_token_embeddings(len(tokenizer))  # Исправляет размер mismatch
+base_model.resize_token_embeddings(len(tokenizer))
 
-# 3. Загрузите LoRA-адаптеры
 model = PeftModel.from_pretrained(base_model, "./results/checkpoint-441")
 model = model.merge_and_unload()
 
-# 4. Генерация текста
 generator = pipeline(
     "text-generation",
     model=model,

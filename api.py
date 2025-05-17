@@ -2,24 +2,33 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import subprocess
 from typing import Optional
+from enum import Enum
 
 app = FastAPI()
+
+class ModelType(str, Enum):
+    CUSTOM = "custom"
+    GPT2 = "gpt2"
 
 class GenerationRequest(BaseModel):
     prompt: str
     max_tokens: Optional[int] = 200
     temperature: Optional[float] = 0.3
-    stop_token: Optional[str] = "[EOS]"
+    model_type: ModelType = ModelType.CUSTOM
 
 def run_generation(request: GenerationRequest) -> str:
     try:
+        script_map = {
+            ModelType.CUSTOM: "gen.py",
+            ModelType.GPT2: "inference.py"
+        }
+
         result = subprocess.run(
             [
-                "python", "gen.py",
+                "python", script_map[request.model_type],
                 "--prompt", request.prompt,
                 "--max_tokens", str(request.max_tokens),
                 "--temperature", str(request.temperature),
-                "--stop_token", request.stop_token
             ],
             capture_output=True,
             text=True,

@@ -70,17 +70,14 @@ def main():
     parser.add_argument("--max_tokens", type=int, default=200)
     parser.add_argument("--temperature", type=float, default=0.3)
     args = parser.parse_args()
-    while True:
-        prompt = input("\nпромт\n> ")
-        if prompt.lower() in ["exit", "quit"]:
-            break
-        output = generate_text(
-            args.prompt,
-            max_new_tokens=args.max_tokens,
-            temperature=args.temperature,
-        )
-        print("\nСгенерированный текст:\n")
-        print("".join(output))
+    prompt = input("\nпромт\n> ")
+    output = generate_text(
+        args.prompt,
+        max_new_tokens=args.max_tokens,
+        temperature=args.temperature,
+    )
+    print("\nСгенерированный текст:\n")
+    print("".join(output))
 
 if __name__ == "__main__":
     main()

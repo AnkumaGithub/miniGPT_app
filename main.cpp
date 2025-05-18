@@ -3,8 +3,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
-#include <imguispinner.hpp>
 #include <cpr/cpr.h>
+#include <json.h>
 #include <string>
 #include <codecvt>
 #include <thread>
@@ -21,6 +21,42 @@ struct AppState {
     std::atomic<bool> requestFailed{false};
 };
 
+// Простая реализация спиннера
+void SimpleSpinner(float radius, float thickness, ImU32 color) {
+    static float startTime = ImGui::GetTime();
+    float time = ImGui::GetTime() - startTime;
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+
+    ImVec4 colorVec = ImColor(color).Value; // Используем ImColor.Value [[7]]
+
+    const int segments = 12;
+    const float angleStep = 2 * 3.141592 / segments;
+
+    for (int i = 0; i < segments; i++) {
+        float angle = i * angleStep + time * 2;
+        float alpha = 1.0f - (float)i / segments;
+
+        ImVec2 point(
+            pos.x + radius + cos(angle) * radius,
+            pos.y + radius + sin(angle) * radius
+        );
+
+        drawList->AddCircleFilled(
+            point,
+            thickness * alpha,
+            IM_COL32(
+                (int)(colorVec.x * 255),
+                (int)(colorVec.y * 255),
+                (int)(colorVec.z * 255),
+                (int)(alpha * 255)
+            )
+        );
+    }
+
+    ImGui::Dummy(ImVec2(radius * 2, radius * 2));
+}
 
 void GenerateAsync(AppState& state) {
     state.isGenerating = true;
@@ -40,22 +76,19 @@ void GenerateAsync(AppState& state) {
                     R"(", "model_type":")" + model +
                     R"(", "max_tokens":200, "temperature":0.3})"
                 },
-                cpr::Timeout{5000} // Таймаут 5 секунд
+                cpr::Timeout{30000} // Таймаут 30 секунд
             );
 
             // Проверяем статус ответа
-            if (response.status_code == 0) {
-            state.outputText = "Error: Server unreachable";
-            }
-            else {
-            // Проверяем содержимое ответа
-                if (response.text.find("Error") != std::string::npos) {
-                    state.outputText = response.text;
-                    state.requestFailed = true;
+            try {
+                nlohmann::json json_response = nlohmann::json::parse(response.text);
+                if (json_response.contains("generated_text")) {
+                    state.outputText = json_response["generated_text"].get<std::string>();
+                } else {
+                    state.outputText = "Error: Invalid response format";
                 }
-                else {
-                    state.outputText = response.text;
-                }
+            } catch (const std::exception& e) {
+                state.outputText = "JSON Parse Error: " + std::string(e.what());
             }
         } catch (const std::exception& e) {
             state.outputText = "Exception: " + std::string(e.what());
@@ -121,6 +154,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
         // Выбор модели
         ImGui::Combo("Модель", &state.selectedModel, models, IM_ARRAYSIZE(models));
+        ImGui::SameLine();
+
+        if (state.isGenerating) {
+            SimpleSpinner(15.0f, 6.0f, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
+        } else {
+            ImGui::Dummy(ImVec2(15.0f * 2, 0.0f)); // Резервируем место под спиннер
+        }
 
         // Поле ввода
         strncpy(inputBuffer, state.inputText.c_str(), IM_ARRAYSIZE(inputBuffer));
@@ -130,12 +170,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         // Кнопка генерации
         if (ImGui::Button("Сгенерировать", ImVec2(-1, 40)) && !state.isGenerating) {
             GenerateAsync(state);
-        }
-
-        // Индикатор загрузки
-        if (state.isGenerating) {
-            ImGui::SameLine();
-            ImSpinner::SpinnerRainbow("##spinner", 15.0f, 6.0f, 2.0f, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
         }
 
         // Поле вывода

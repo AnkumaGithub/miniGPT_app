@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
 import torch
 import tiktoken

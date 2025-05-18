@@ -37,6 +37,7 @@ add_executable(TextGenerator WIN32
         main.cpp
         src/imgui_impl_glfw.cpp
         src/imgui_impl_opengl3.cpp
+        include/json.h
 )
 
 # Настройки include-директорий

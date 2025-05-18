@@ -19,6 +19,9 @@ struct AppState {
     int selectedModel = 0;
     std::atomic<bool> isGenerating{false};
     std::atomic<bool> requestFailed{false};
+
+    int maxTokens = 200;
+    float temperature = 0.3f;
 };
 
 // Простая реализация спиннера
@@ -74,7 +77,9 @@ void GenerateAsync(AppState& state) {
                 cpr::Body{
                     R"({"prompt":")" + state.inputText +
                     R"(", "model_type":")" + model +
-                    R"(", "max_tokens":200, "temperature":0.3})"
+                    R"(", "max_tokens":)" + std::to_string(state.maxTokens) +
+                    R"(, "temperature":)" + std::to_string(state.temperature) +
+                    R"(})"
                 },
                 cpr::Timeout{30000} // Таймаут 30 секунд
             );
@@ -163,6 +168,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             SimpleSpinner(15.0f, 6.0f, ImGui::GetColorU32(ImGuiCol_ButtonHovered));
         } else {
             ImGui::Dummy(ImVec2(15.0f * 2, 0.0f)); // Резервируем место под спиннер
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Параметры")) {
+            ImGui::OpenPopup("gen_params_popup");
+        }
+
+        // Всплывающее окно с параметрами
+        if (ImGui::BeginPopup("gen_params_popup")) {
+            ImGui::SliderInt("Макс. токенов", &state.maxTokens, 10, 1000);
+            ImGui::SliderFloat("Температура", &state.temperature, 0.0f, 2.0f);
+            ImGui::EndPopup();
         }
 
         // Поле ввода

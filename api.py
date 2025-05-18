@@ -25,7 +25,7 @@ def run_generation(request: GenerationRequest) -> str:
 
         result = subprocess.run(
             [
-                "python", script_map[request.model_type],
+                "E:/PyCharm 2024.3.5/projects/.venv/Scripts/python.exe", script_map[request.model_type],
                 "--prompt", request.prompt,
                 "--max_tokens", str(request.max_tokens),
                 "--temperature", str(request.temperature),
@@ -34,10 +34,13 @@ def run_generation(request: GenerationRequest) -> str:
             text=True,
             check=True
         )
+        print(f"[DEBUG] Script output: {result.stdout}")
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
+        print(f"Subprocess error: {e.stderr}")
         return f"Error: {e.stderr}"
     except Exception as e:
+        print(f"Unexpected error: {str(e)}")
         return f"Unexpected error: {str(e)}"
 
 @app.post("/generate")
@@ -53,7 +56,7 @@ async def generate_text(request: GenerationRequest):
     return {
         "prompt": request.prompt,
         "generated_text": response,
-        "parameters": request.dict()
+        "parameters": request.model_dump()
     }
 
 @app.get("/health")

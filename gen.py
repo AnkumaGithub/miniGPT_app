@@ -1,8 +1,13 @@
 import argparse
+import os
+import sys
 
 import torch
 import tiktoken
 from model import GPT, GPTConfig
+
+os.environ["TMPDIR"] = "E:/temp_pytorch"
+os.environ["TEMP"] = "E:/temp_pytorch"
 
 config = GPTConfig(
     vocab_size=50263,
@@ -70,13 +75,12 @@ def main():
     parser.add_argument("--max_tokens", type=int, default=200)
     parser.add_argument("--temperature", type=float, default=0.3)
     args = parser.parse_args()
-    prompt = input("\nпромт\n> ")
     output = generate_text(
         args.prompt,
         max_new_tokens=args.max_tokens,
         temperature=args.temperature,
     )
-    print("\nСгенерированный текст:\n")
+    sys.stdout.reconfigure(encoding='utf-8')
     print("".join(output))
 
 if __name__ == "__main__":

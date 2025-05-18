@@ -29,24 +29,37 @@ void GenerateAsync(AppState& state) {
     std::thread([&state]() {
         try {
             std::string model = state.selectedModel == 0 ? "custom" : "gpt2";
+            cpr::Response response;
 
-            // Ваш код для генерации
-            auto response = cpr::Post(
+            // Устанавливаем таймаут для запроса (5 секунд)
+            response = cpr::Post(
                 cpr::Url{"http://localhost:8000/generate"},
                 cpr::Header{{"Content-Type", "application/json"}},
                 cpr::Body{
                     R"({"prompt":")" + state.inputText +
                     R"(", "model_type":")" + model +
                     R"(", "max_tokens":200, "temperature":0.3})"
-                }
+                },
+                cpr::Timeout{5000} // Таймаут 5 секунд
             );
 
-            if (response.status_code == 200) {
-                state.outputText = response.text;
-            } else {
-                state.outputText = "Error: " + std::to_string(response.status_code);
-                state.requestFailed = true;
+            // Проверяем статус ответа
+            if (response.status_code == 0) {
+            state.outputText = "Error: Server unreachable";
             }
+            else {
+            // Проверяем содержимое ответа
+                if (response.text.find("Error") != std::string::npos) {
+                    state.outputText = response.text;
+                    state.requestFailed = true;
+                }
+                else {
+                    state.outputText = response.text;
+                }
+            }
+        } catch (const std::exception& e) {
+            state.outputText = "Exception: " + std::string(e.what());
+            state.requestFailed = true;
         } catch (...) {
             state.outputText = "Unknown error";
             state.requestFailed = true;
@@ -56,11 +69,12 @@ void GenerateAsync(AppState& state) {
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)  {
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
     // Инициализация GLFW
     if (!glfwInit()) return 1;
 
     // Создание окна
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Text Generator", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Text Generator", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -71,7 +85,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     // Инициализация ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowPadding = ImVec2(15, 15); // Отступы внутри окна
+    style.ItemSpacing = ImVec2(10, 15);    // Расстояние между элементами
+    style.ScaleAllSizes(1.5f);
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImFontConfig config;
+    config.OversampleH = 2;
+    config.OversampleV = 2;
+    io.Fonts->AddFontFromFileTTF("C:/Windows/Fonts/arial.ttf", 18.0f, &config, io.Fonts->GetGlyphRangesCyrillic());
 
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -92,16 +116,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         ImGui::NewFrame();
 
         // Окно приложения
-        ImGui::Begin("Генератор текста", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        ImGui::SetNextWindowSize(ImVec2(600, 400), ImGuiCond_FirstUseEver); // Начальный размер
+        ImGui::Begin("Генератор текста", nullptr, ImGuiWindowFlags_None);
 
         // Выбор модели
         ImGui::Combo("Модель", &state.selectedModel, models, IM_ARRAYSIZE(models));
 
         // Поле ввода
-        ImGui::InputTextMultiline("##input", inputBuffer, IM_ARRAYSIZE(inputBuffer), ImVec2(-1, 100));
+        strncpy(inputBuffer, state.inputText.c_str(), IM_ARRAYSIZE(inputBuffer));
+        ImGui::InputTextMultiline("##input", inputBuffer, IM_ARRAYSIZE(inputBuffer), ImVec2(-1, 150));
+        state.inputText = inputBuffer;
 
         // Кнопка генерации
-        if (ImGui::Button("Сгенерировать", ImVec2(-1, 0)) && !state.isGenerating) {
+        if (ImGui::Button("Сгенерировать", ImVec2(-1, 40)) && !state.isGenerating) {
             GenerateAsync(state);
         }
 
@@ -113,6 +140,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
         // Поле вывода
         ImGui::PushStyleColor(ImGuiCol_Text, state.requestFailed ? IM_COL32(255, 0, 0, 255) : ImGui::GetColorU32(ImGuiCol_Text));
+        strncpy(outputBuffer, state.outputText.c_str(), IM_ARRAYSIZE(outputBuffer));
         ImGui::InputTextMultiline("##output", outputBuffer, IM_ARRAYSIZE(outputBuffer), ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
         ImGui::PopStyleColor();
 

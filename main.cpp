@@ -121,8 +121,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowPadding = ImVec2(15, 15); // Отступы внутри окна
+    ImGui::StyleColorsDark();
     style.ItemSpacing = ImVec2(10, 15);    // Расстояние между элементами
     style.ScaleAllSizes(1.5f);
+
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.16f, 0.29f, 0.48f, 0.54f);
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
 
     ImGuiIO& io = ImGui::GetIO();
     ImFontConfig config;
@@ -141,7 +145,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         char inputBuffer[1024] = {0}; // Буфер для ввода
-        char outputBuffer[4096] = {0}; // Буфер для вывода
 
         // Начало кадра ImGui
         ImGui_ImplOpenGL3_NewFrame();
@@ -173,10 +176,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         }
 
         // Поле вывода
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::GetStyle().Colors[ImGuiCol_FrameBg]); // Наследуем фон поля ввода
         ImGui::PushStyleColor(ImGuiCol_Text, state.requestFailed ? IM_COL32(255, 0, 0, 255) : ImGui::GetColorU32(ImGuiCol_Text));
-        strncpy(outputBuffer, state.outputText.c_str(), IM_ARRAYSIZE(outputBuffer));
-        ImGui::InputTextMultiline("##output", outputBuffer, IM_ARRAYSIZE(outputBuffer), ImVec2(-1, -1), ImGuiInputTextFlags_ReadOnly);
-        ImGui::PopStyleColor();
+
+        ImGui::BeginChild("OutputScroll", ImVec2(-1, 300), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+        ImGui::PushTextWrapPos(0.0f); // Перенос по ширине окна
+        ImGui::TextUnformatted(state.outputText.c_str());
+        ImGui::PopTextWrapPos();
+        ImGui::EndChild();
+
+        ImGui::PopStyleColor(2);
 
         ImGui::End();
 

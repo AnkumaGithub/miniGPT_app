@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
-project(TextGenerator)
 
 # Настройка vcpkg
 set(CMAKE_TOOLCHAIN_FILE "C:/Users/79096/vcpkg/scripts/buildsystems/vcpkg.cmake")
 set(CMAKE_PREFIX_PATH "C:/Users/79096/vcpkg/installed/x64-mingw-dynamic")
 set(VCPKG_TARGET_TRIPLET "x64-mingw-dynamic")
+
+project(TextGenerator)
 
 # Настройки стандарта C++
 set(CMAKE_CXX_STANDARD 20)
@@ -34,16 +35,17 @@ find_package(OpenGL REQUIRED)
 
 # Создание исполняемого файла (ОДИН РАЗ!)
 add_executable(TextGenerator WIN32
-        main.cpp
-        src/imgui_impl_glfw.cpp
-        src/imgui_impl_opengl3.cpp
-        include/json.h
+        src/app/app.cpp
+        include_realization/imgui_impl_glfw.cpp
+        include_realization/imgui_impl_opengl3.cpp
+        include_headers/json.h
+        src/app/app.h
 )
 
 # Настройки include-директорий
 target_include_directories(TextGenerator PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include_headers
 )
 
 # Линковка библиотек

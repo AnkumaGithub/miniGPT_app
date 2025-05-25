@@ -19,8 +19,8 @@ class GenerationRequest(BaseModel):
 def run_generation(request: GenerationRequest) -> str:
     try:
         script_map = {
-            ModelType.CUSTOM: "gen.py",
-            ModelType.GPT2: "inference.py"
+            ModelType.CUSTOM: "src\generation\gen.py",
+            ModelType.GPT2: "src\generation\inference.py"
         }
 
         result = subprocess.run(

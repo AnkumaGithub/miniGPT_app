@@ -5,7 +5,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 import torch
 import tiktoken
-from model import GPT, GPTConfig
+from src.model.model import GPT, GPTConfig
 
 os.environ["TMPDIR"] = "E:/temp_pytorch"
 os.environ["TEMP"] = "E:/temp_pytorch"
@@ -41,7 +41,7 @@ with torch.serialization.safe_globals([GPTConfig]):
 model.load_state_dict(checkpoint["model"])
 model.eval()
 
-SPECIAL_TOKENS = ["[Q]", "[A]", "[SEP]", "[EOS]", "[USER]", "[BOT]"]
+SPECIAL_TOKENS = ["[PAD]", "[Q]", "[A]", "[SEP]", "[EOS]", "[USER]", "[BOT]"]
 
 enc = tiktoken.get_encoding(ENCODING)
 enc = tiktoken.Encoding(

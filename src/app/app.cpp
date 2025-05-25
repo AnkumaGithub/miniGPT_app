@@ -12,7 +12,6 @@
 
 std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
-// Состояние интерфейса
 struct AppState {
     std::string inputText;
     std::string outputText;
@@ -24,7 +23,6 @@ struct AppState {
     float temperature = 0.3f;
 };
 
-// Простая реализация спиннера
 void SimpleSpinner(float radius, float thickness, ImU32 color) {
     static float startTime = ImGui::GetTime();
     float time = ImGui::GetTime() - startTime;
@@ -32,7 +30,7 @@ void SimpleSpinner(float radius, float thickness, ImU32 color) {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     ImVec2 pos = ImGui::GetCursorScreenPos();
 
-    ImVec4 colorVec = ImColor(color).Value; // Используем ImColor.Value [[7]]
+    ImVec4 colorVec = ImColor(color).Value;
 
     const int segments = 12;
     const float angleStep = 2 * 3.141592 / segments;
@@ -70,7 +68,6 @@ void GenerateAsync(AppState& state) {
             std::string model = state.selectedModel == 0 ? "custom" : "gpt2";
             cpr::Response response;
 
-            // Устанавливаем таймаут для запроса (5 секунд)
             response = cpr::Post(
                 cpr::Url{"http://localhost:8000/generate"},
                 cpr::Header{{"Content-Type", "application/json"}},
@@ -81,10 +78,9 @@ void GenerateAsync(AppState& state) {
                     R"(, "temperature":)" + std::to_string(state.temperature) +
                     R"(})"
                 },
-                cpr::Timeout{30000} // Таймаут 30 секунд
+                cpr::Timeout{30000}
             );
 
-            // Проверяем статус ответа
             try {
                 nlohmann::json json_response = nlohmann::json::parse(response.text);
                 if (json_response.contains("generated_text")) {
@@ -118,16 +114,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         return 1;
     }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // VSync
+    glfwSwapInterval(1);
 
     // Инициализация ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
     ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowPadding = ImVec2(15, 15); // Отступы внутри окна
+    style.WindowPadding = ImVec2(15, 15);
     ImGui::StyleColorsDark();
-    style.ItemSpacing = ImVec2(10, 15);    // Расстояние между элементами
+    style.ItemSpacing = ImVec2(10, 15);
     style.ScaleAllSizes(1.5f);
 
     style.Colors[ImGuiCol_FrameBg] = ImVec4(0.16f, 0.29f, 0.48f, 0.54f);
@@ -145,11 +141,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     AppState state;
     const char* models[] = { "Моя модель", "GPT-2" };
-
-    // Главный цикл
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        char inputBuffer[1024] = {0}; // Буфер для ввода
+        char inputBuffer[1024] = {0};
 
         // Начало кадра ImGui
         ImGui_ImplOpenGL3_NewFrame();
